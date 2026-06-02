@@ -1,0 +1,38 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release-apk:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # No signing keystore is configured, so this produces an unsigned release
+      # APK (app-release-unsigned.apk) — fine for distributing test builds.
+      - name: Build release APK
+        run: ./gradlew assembleRelease --no-daemon
+
+      # Publish the build as a downloadable artifact tagged with the commit SHA,
+      # so every main build is traceable to a commit (same idea as the SHA image
+      # tags on the backend/frontend, since there is no app store to push to).
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exbanka-3-mobile-${{ github.sha }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
